@@ -16,7 +16,6 @@
 echo "INFO - Some JMeter prepare steps..."
 ls -la
 
-echo "DEBUG - Working directory: $1"
 echo "INFO - Running JMeter..."
 jmeter -n -t tests/example-jmeter-test.jmx -Jhost=ya.ru -l index.html -e -o ./jmeter_report
 

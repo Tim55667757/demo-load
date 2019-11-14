@@ -22,7 +22,6 @@
 echo "INFO - Some Yandex.Tank prepare steps..."
 ls -la
 
-echo "DEBUG - Working directory: $1"
 echo "INFO - Running Yandex.Tank..."
 yandex-tank -c tests/example-yandextank-test.yml tests/ammo.txt
 

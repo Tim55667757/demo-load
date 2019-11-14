@@ -6,7 +6,7 @@ phantom:
 console:
   enabled: false # enable or disable console output
 influx:
-  enabled: true  # See instruction: https://yandextank.readthedocs.io/en/latest/core_and_modules.html#influxdb
+  enabled: false  # See instruction: https://yandextank.readthedocs.io/en/latest/core_and_modules.html#influxdb
   address: 0.0.0.0  # InfluxDB server address
   port: 8086  # InfluxDB port
   database: test_result  # InfluxDB database. (Default: 'mydb')
