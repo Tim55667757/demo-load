@@ -1,0 +1,101 @@
+# В концепцию нагрузочного тестирования как CI-сервиса входит три простых этапа:
+# подготовка, тестирование, публикация отчётов.
+# Подробнее о концепции читайте в статье: https://forworktests.blogspot.com/
+
+stages:
+  - Prepare
+  - Test
+  - Report
+
+
+# ------------------------- PREPARE STAGE ------------------------------------------------------------------------------
+# Подготовительный этап настройки окружения или целей тестирования
+
+# Можно закомментировать эту job-у, если вам ничего не требуется выполнять перед запуском тестов.
+# Окружение для источников нагрузки, как правило, настраивать не нужно: достаточно указать версию докер-образа
+# для источника нагрузки в TEST STAGE.
+# Предполагается, что пулы ваших агентов в GitLab CI для нагрузочного тестирования имеют теги "load".
+# Их можно настроить при регистрации агентов: https://docs.gitlab.com/runner/register/
+
+Preparing:
+  stage: Prepare
+  tags:
+    - load
+  script:
+    - echo "Some prepare steps, environments or prepare test targets..."
+
+
+# ------------------------- TEST STAGE ---------------------------------------------------------------------------------
+# Этап выполнения нагрузочных тестов
+
+# Ниже описана job-а для тестирования с помощью источника нагрузки Yandex.Tank.
+# Предполагается, что вы используете заранее собранный докер образ Yandex.Tank и размещённый в некотором докер-регистри.
+# Например, можно использовать образ https://hub.docker.com/r/direvius/yandex-tank/
+
+# Внимание! Все параметры запуска Yandex.Tank редактируйте в файле ./tests/yandextank.sh
+# Если вам не нужно тестировать с помощью Yandex.Tank, то закомментируйте эту job-у или удалите строчки описания.
+
+Yandex.Tank:
+  stage: Test
+  tags:
+    - load
+  image: direvius/yandex-tank:latest
+  script:
+    - chmod +x ./tests/yandextank.sh && ./tests/yandextank.sh
+  artifacts:
+    paths:
+    - yandextank_report
+
+# Ниже описана job-а для тестирования с помощью источника нагрузки Apache JMeter.
+# Предполагается, что вы используете заранее собранный докер образ Apache JMeter, размещённый в докер-регистри.
+# Например, можно использовать образ https://hub.docker.com/r/vmarrazzo/jmeter
+
+# Внимание! Все параметры запуска Apache JMeter редактируйте в файле ./tests/jmeter.sh
+# Если вам не нужно тестировать с помощью Apache JMeter, то закомментируйте эту job-у или удалите строчки описания.
+
+Apache JMeter:
+  stage: Test
+  tags:
+    - load
+  image: vmarrazzo/jmeter:latest
+  script:
+    - chmod +x ./tests/jmeter.sh && ./tests/jmeter.sh
+  artifacts:
+    paths:
+    - jmeter_report
+
+
+# ------------------------- REPORT STAGE -------------------------------------------------------------------------------
+# Этап публикации результатов тестирования
+
+# Результаты тестирования по умолчанию публикуются в GitLab Pages для текущего проекта.
+# Внимание! Для работы job-ы pages требуется, чтобы после окончания тестов каталог ./public был не пустой и содержал,
+# как минимум, файл index.html. Подробнее про работу GitLab Pages, смотрите в официальной документации:
+# https://docs.gitlab.com/ce/user/project/pages/index.html#how-it-works
+
+# Вы можете опубликовать результаты в любую другую систему. Для этого самостоятельно опишите интеграцию с нужной
+# вам системой отчётности в своих тестовых сценариях.
+# Если вам не нужно публиковать отчёт в GitLab Pages, то закомментируйте эту job-у или удалите строчки описания.
+
+pages:
+  stage: Report
+  image: python:3.6
+  dependencies:
+    - Yandex.Tank
+    - Apache JMeter
+  tags:
+    - load
+  script:
+    - echo "Publishing report to GitLab Pages..."
+    - mkdir -p public
+    - cp -r yandextank_report public
+    - cp -r jmeter_report public
+    - echo "See report on GitLab Pages at https://$CI_PROJECT_NAMESPACE.pages.YOUR_GITLAB_SERVER.com/$CI_PROJECT_NAME/"
+    - echo "This is main demo page of test report. All operations finished success.<br><br>" > ./public/index.html
+    - echo "See example of Yandex.Tank report at ./jmeter_report/" >> ./public/index.html
+    - echo "See example of Apache JMeter report at ./jmeter_report/" >> ./public/index.html
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
